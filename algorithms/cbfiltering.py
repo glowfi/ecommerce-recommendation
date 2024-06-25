@@ -7,6 +7,7 @@ from nltk.stem import WordNetLemmatizer
 import pickle
 from dotenv import find_dotenv, load_dotenv
 import os
+from pathlib import Path
 
 # Load dotenv
 load_dotenv(find_dotenv(".env"))
@@ -18,13 +19,21 @@ class ProductRecommender:
 
         self.db = db
         self.products_df = pd.DataFrame(products_df)
-        self.vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
-        self.tfidf_matrix = self.vectorizer.fit_transform(
-            self._create_combined_text(self.products_df)
-        )
-        self.tfidf_array = self.tfidf_matrix.toarray()
-        self.similarity_matrix = cosine_similarity(self.tfidf_array)
-        self.similarity_dict = self._create_similarity_dict()
+        self.filename = "similarity_matrix.pkl"
+
+        my_file = Path(self.filename)
+        if my_file.is_file():
+            self.similarity_matrix = self.load_similarity_matrix()
+            self.similarity_dict = self._create_similarity_dict()
+        else:
+            self.vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
+            self.tfidf_matrix = self.vectorizer.fit_transform(
+                self._create_combined_text(self.products_df)
+            )
+            self.tfidf_array = self.tfidf_matrix.toarray()
+            self.similarity_matrix = cosine_similarity(self.tfidf_array)
+            self.similarity_dict = self._create_similarity_dict()
+            self.save_similarity_matrix()
 
     def _create_combined_text(self, products_df):
         combined_text = []
@@ -91,10 +100,11 @@ class ProductRecommender:
 
         return res
 
-    def save_similarity_matrix(self, filename):
-        with open(filename, "wb") as f:
+    def save_similarity_matrix(self):
+        with open(self.filename, "wb") as f:
             pickle.dump(self.similarity_matrix, f)
 
-    def load_similarity_matrix(self, filename):
-        with open(filename, "rb") as f:
-            self.similarity_matrix = pickle.load(f)
+    def load_similarity_matrix(self):
+        with open(self.filename, "rb") as f:
+            return pickle.load(f)
+        return None

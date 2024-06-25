@@ -21,6 +21,7 @@ load_dotenv(find_dotenv(".env"))
 PORT = str(os.getenv("PORT"))
 FRONTEND_URL = str(os.getenv("FRONTEND_URL"))
 CB_FILTER_DATA_COLLECTION_NAME = str(os.getenv("CB_FILTER_COLLECTION_NAME"))
+STAGE = str(os.getenv("STAGE"))
 
 # Global db map
 db_map = {"client": None, "db": None}
@@ -78,7 +79,7 @@ app.add_middleware(
 
 
 @app.get("/")
-@cache(expire=60)
+@cache(expire=12 * 3600)
 async def insert_product_to_dataset(background_tasks: BackgroundTasks):
     background_tasks.add_task(data_pre_cbfilter.generate_json, db_map["db"])
     return JSONResponse(
@@ -98,9 +99,12 @@ async def get_recommendations(product_id: str, num_recommendations: int):
         recommendations = await recommender.generate_recommendations(
             product_id, num_recommendations
         )
-        return JSONResponse(
-            {"data": _encrypt(json.dumps(recommendations)), "err": None}
-        )
+        if STAGE == "production":
+            return JSONResponse(
+                {"data": _encrypt(json.dumps(recommendations)), "err": None}
+            )
+        elif STAGE == "local":
+            return JSONResponse({"data": recommendations, "err": None})
     except Exception as e:
         print(str(e))
         return JSONResponse(

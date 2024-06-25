@@ -101,6 +101,9 @@ async def generate_json(db):
 
             # Update last seen product
             await handle_last_known_id(new_products, db)
+
+            # Remove old pickle
+            os.remove("similarity_matrix.pkl")
     else:
         print("Seeing data first time")
 
