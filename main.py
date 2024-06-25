@@ -12,6 +12,7 @@ import nltk
 from fastapi_cache.decorator import cache
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
+from helper.krypt import _encrypt
 
 
 # Load dotenv
@@ -96,7 +97,7 @@ async def get_recommendations(product_id: str, num_recommendations: int):
         recommendations = await recommender.generate_recommendations(
             product_id, num_recommendations
         )
-        return JSONResponse({"data": recommendations, "err": None})
+        return JSONResponse({"data": _encrypt(recommendations), "err": None})
     except Exception as e:
         print(str(e))
         return JSONResponse(
